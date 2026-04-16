@@ -1,0 +1,13 @@
+{
+    "display_name": "Authentic Roleplay",
+    "version": "0.1.0",
+    "js": "index.js",
+    "css": "style.css",
+    "author": "Brendan McKeag",
+    "loading_order": 10,
+    "requires": [],
+    "auto_update": true,
+    "minimum_client_version": "1.12.0",
+    "homePage": "https://github.com/Brendan-McKeag/sillytavern-authentic-roleplay",
+    "tags": ["roleplay", "character", "immersion"]
+}

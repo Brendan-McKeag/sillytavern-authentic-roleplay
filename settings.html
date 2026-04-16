@@ -1,0 +1,103 @@
+<div class="authentic-roleplay-settings">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b>Authentic Roleplay</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content">
+
+            <div class="ar-setting-row">
+                <label class="ar-label" for="ar-enabled">
+                    <input id="ar-enabled" type="checkbox" />
+                    Enable Self-Modifying Character Cards
+                </label>
+                <small class="ar-hint">When enabled, the LLM will automatically update the character card with new events, history, and character evolution from your conversations.</small>
+            </div>
+
+            <hr class="sysHR" />
+
+            <div class="ar-setting-group">
+                <label class="ar-section-label">Update Trigger</label>
+
+                <div class="ar-setting-row ar-inline">
+                    <label for="ar-update-frequency">Update every</label>
+                    <input id="ar-update-frequency" type="number" min="1" max="50" step="1" class="text_pole ar-number-input" />
+                    <label>AI messages</label>
+                </div>
+                <small class="ar-hint">How many AI responses to wait before triggering a character card review.</small>
+
+                <div class="ar-setting-row">
+                    <label class="ar-label" for="ar-require-confirmation">
+                        <input id="ar-require-confirmation" type="checkbox" />
+                        Require confirmation before applying updates
+                    </label>
+                </div>
+            </div>
+
+            <hr class="sysHR" />
+
+            <div class="ar-setting-group">
+                <label class="ar-section-label">Fields to Update</label>
+                <small class="ar-hint">Choose which parts of the character card the LLM can evolve.</small>
+
+                <div class="ar-setting-row">
+                    <label class="ar-label" for="ar-update-description">
+                        <input id="ar-update-description" type="checkbox" />
+                        Description
+                    </label>
+                </div>
+                <div class="ar-setting-row">
+                    <label class="ar-label" for="ar-update-personality">
+                        <input id="ar-update-personality" type="checkbox" />
+                        Personality
+                    </label>
+                </div>
+                <div class="ar-setting-row">
+                    <label class="ar-label" for="ar-update-scenario">
+                        <input id="ar-update-scenario" type="checkbox" />
+                        Scenario
+                    </label>
+                </div>
+            </div>
+
+            <hr class="sysHR" />
+
+            <div class="ar-setting-group">
+                <label class="ar-section-label">Context</label>
+
+                <div class="ar-setting-row ar-inline">
+                    <label for="ar-context-messages">Analyze last</label>
+                    <input id="ar-context-messages" type="number" min="4" max="100" step="1" class="text_pole ar-number-input" />
+                    <label>messages</label>
+                </div>
+                <small class="ar-hint">How many recent messages the LLM reads when deciding what to add to the character card.</small>
+            </div>
+
+            <hr class="sysHR" />
+
+            <div class="ar-setting-group">
+                <label class="ar-section-label">Notifications</label>
+                <div class="ar-setting-row">
+                    <label class="ar-label" for="ar-show-notifications">
+                        <input id="ar-show-notifications" type="checkbox" />
+                        Show toast notification when card is updated
+                    </label>
+                </div>
+            </div>
+
+            <hr class="sysHR" />
+
+            <div class="ar-actions">
+                <button id="ar-update-now" class="menu_button" title="Immediately trigger a character card review for the current chat">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    Update Card Now
+                </button>
+                <button id="ar-view-history" class="menu_button" title="View the history of updates made to the current character's card">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    View Update History
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
