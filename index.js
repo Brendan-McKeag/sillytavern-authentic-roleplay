@@ -15,7 +15,7 @@ import {
     writeExtensionField,
 } from '../../scripts/extensions.js';
 import { eventSource, event_types } from '../../scripts/events.js';
-import { saveSettingsDebounced } from '../../scripts/script.js';
+import { saveSettingsDebounced } from '../../script.js';
 import { POPUP_TYPE, callGenericPopup } from '../../scripts/popup.js';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
