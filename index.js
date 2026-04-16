@@ -13,10 +13,10 @@ import {
     getContext,
     extension_settings,
     writeExtensionField,
-} from '../../scripts/extensions.js';
-import { eventSource, event_types } from '../../scripts/events.js';
-import { saveSettingsDebounced } from '../../script.js';
-import { POPUP_TYPE, callGenericPopup } from '../../scripts/popup.js';
+} from '../../../extensions.js';
+import { eventSource, event_types } from '../../../events.js';
+import { saveSettingsDebounced } from '../../../../script.js';
+import { POPUP_TYPE, callGenericPopup } from '../../../popup.js';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
