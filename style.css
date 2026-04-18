@@ -101,6 +101,49 @@
     padding: 20px;
 }
 
+/* Compress & Rewrite popup */
+.ar-compress-container {
+    padding: 4px;
+}
+
+.ar-compress-intro {
+    font-size: 0.9em;
+    margin-bottom: 12px;
+    line-height: 1.5;
+}
+
+.ar-compress-field {
+    margin-bottom: 14px;
+}
+
+.ar-compress-field-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.ar-compress-field-header label {
+    font-weight: bold;
+    font-size: 0.95em;
+}
+
+.ar-compress-field-header .ar-copy-btn {
+    padding: 2px 10px;
+    font-size: 0.85em;
+    min-width: auto;
+    flex: none;
+}
+
+.ar-compress-textarea {
+    width: 100%;
+    min-height: 120px;
+    resize: vertical;
+    font-size: 0.9em;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
 /* Spinning indicator while update is in progress */
 .ar-updating-indicator {
     display: inline-flex;

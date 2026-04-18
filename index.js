@@ -109,6 +109,22 @@ const SETTINGS_HTML = `
                     View Update History
                 </button>
             </div>
+            <hr class="sysHR" />
+            <div class="ar-setting-group">
+                <label class="ar-section-label">Compress & Rewrite</label>
+                <small class="ar-hint">Rewrites the original character card fields plus all evolution log entries into a single cohesive narrative — "the story thus far." The result is shown for you to review and copy back into the character editor.</small>
+                <div class="ar-setting-row ar-inline" style="margin-top:8px;">
+                    <label for="ar-token-budget">Token budget per field</label>
+                    <input id="ar-token-budget" type="number" min="50" max="4000" step="50" class="text_pole ar-number-input" style="width:80px!important;" />
+                </div>
+                <small class="ar-hint">Approximate target length for each rewritten field. Lower = more concise.</small>
+                <div class="ar-actions" style="margin-top:8px;">
+                    <button id="ar-compress-card" class="menu_button" title="Rewrite character card fields into a cohesive narrative incorporating all evolution log entries">
+                        <i class="fa-solid fa-compress"></i>
+                        Compress Card
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>`;
@@ -126,6 +142,7 @@ const DEFAULT_SETTINGS = {
     showNotifications: true,
     requireConfirmation: false,
     maxContextMessages: 20,
+    compressTokenBudget: 500,
 };
 
 // ─── Module state ─────────────────────────────────────────────────────────────
@@ -450,6 +467,136 @@ function showUpdateHistory() {
     callGenericPopup(html, POPUP_TYPE.TEXT, '', { wide: false, allowVerticalScrolling: true });
 }
 
+// ─── Compress & Rewrite ───────────────────────────────────────────────────────
+
+/**
+ * Split a field value into its original content and evolution log entries.
+ */
+function parseFieldEvolution(value) {
+    if (!value || !value.includes(EVOLUTION_SECTION_HEADER)) {
+        return { original: value || '', entries: [] };
+    }
+    const [original, logSection] = value.split(EVOLUTION_SECTION_HEADER);
+    const entries = logSection
+        .split(EVOLUTION_ENTRY_PREFIX)
+        .map(e => e.trim())
+        .filter(Boolean);
+    return { original: original.trim(), entries };
+}
+
+function buildCompressPrompt(fieldName, original, entries, tokenBudget) {
+    const entryList = entries.map((e, i) => `${i + 1}. ${e}`).join('\n');
+
+    return `You are rewriting a character card field into a single cohesive narrative.
+
+FIELD: ${fieldName}
+
+ORIGINAL CONTENT:
+${original || '(empty)'}
+
+EVOLUTION LOG ENTRIES (chronological):
+${entryList}
+
+YOUR TASK:
+Rewrite the original content and ALL evolution log entries into one cohesive, well-written ${fieldName} field — a unified "story thus far." This is not a summary of changes; it should read as if the character card was written from scratch by someone who knows the character's full history.
+
+RULES:
+1. Preserve ALL factual information from both the original and every evolution entry.
+2. Do not add information that wasn't in the original or the entries.
+3. Write in the same style/voice as the original content.
+4. Organize naturally — weave the evolution entries into the narrative rather than appending them.
+5. Target approximately ${tokenBudget} tokens in length. Be concise but do not drop facts.
+6. Reply with ONLY the rewritten field text — no labels, no JSON, no explanation.`;
+}
+
+async function runCompressCard() {
+    const context = getContext();
+    const settings = getSettings();
+
+    if (context.characterId === undefined || context.characterId === null) {
+        toastr.warning('No character selected.', 'Authentic Roleplay');
+        return;
+    }
+
+    const character = context.characters[context.characterId];
+    if (!character) return;
+
+    const fields = ['description', 'personality', 'scenario'];
+    const fieldsWithEvolution = fields.filter(f => {
+        const val = character.data?.[f] ?? character[f] ?? '';
+        return val.includes(EVOLUTION_SECTION_HEADER);
+    });
+
+    if (fieldsWithEvolution.length === 0) {
+        toastr.info('No fields have evolution log entries to compress.', 'Authentic Roleplay');
+        return;
+    }
+
+    toastr.info(
+        `Compressing ${fieldsWithEvolution.length} field(s) for ${character.name}…`,
+        'Authentic Roleplay',
+        { timeOut: 3000 },
+    );
+
+    const results = {};
+
+    for (const field of fieldsWithEvolution) {
+        const rawValue = character.data?.[field] ?? character[field] ?? '';
+        const { original, entries } = parseFieldEvolution(rawValue);
+        const prompt = buildCompressPrompt(field, original, entries, settings.compressTokenBudget);
+
+        try {
+            const rewritten = await context.generateQuietPrompt(prompt, false, false);
+            if (rewritten?.trim()) {
+                results[field] = rewritten.trim();
+            }
+        } catch (err) {
+            console.error(`[${EXTENSION_NAME}] Error compressing "${field}":`, err);
+            results[field] = `(Error: compression failed — ${err.message})`;
+        }
+    }
+
+    showCompressResults(character.name, results);
+}
+
+function showCompressResults(charName, results) {
+    const fieldLabels = {
+        description: 'Description',
+        personality: 'Personality',
+        scenario: 'Scenario',
+    };
+
+    const fieldBlocks = Object.entries(results).map(([field, text]) => `
+        <div class="ar-compress-field">
+            <div class="ar-compress-field-header">
+                <label>${fieldLabels[field] || field}</label>
+                <button class="menu_button ar-copy-btn" data-field="${field}" title="Copy to clipboard">
+                    <i class="fa-solid fa-copy"></i> Copy
+                </button>
+            </div>
+            <textarea class="text_pole ar-compress-textarea" data-field="${field}" readonly>${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+        </div>`).join('');
+
+    const html = `
+        <div class="ar-compress-container">
+            <p class="ar-compress-intro">Rewritten fields for <strong>${charName}</strong>. Copy each field and paste it into the character editor to replace the current content.</p>
+            ${fieldBlocks}
+        </div>`;
+
+    callGenericPopup(html, POPUP_TYPE.TEXT, '', { wide: true, allowVerticalScrolling: true });
+
+    // Wire copy buttons after popup renders
+    requestAnimationFrame(() => {
+        $('.ar-copy-btn').on('click', function () {
+            const field = $(this).data('field');
+            const text = $(`.ar-compress-textarea[data-field="${field}"]`).val();
+            navigator.clipboard.writeText(text).then(() => {
+                toastr.success(`${fieldLabels[field] || field} copied to clipboard.`, 'Authentic Roleplay');
+            });
+        });
+    });
+}
+
 // ─── Settings UI wiring ───────────────────────────────────────────────────────
 
 function syncUIFromSettings() {
@@ -462,6 +609,7 @@ function syncUIFromSettings() {
     $('#ar-update-scenario').prop('checked', s.updateScenario);
     $('#ar-context-messages').val(s.maxContextMessages);
     $('#ar-show-notifications').prop('checked', s.showNotifications);
+    $('#ar-token-budget').val(s.compressTokenBudget);
 }
 
 function wireSettingsUI() {
@@ -509,6 +657,24 @@ function wireSettingsUI() {
     });
 
     $('#ar-view-history').on('click', showUpdateHistory);
+
+    $('#ar-token-budget').on('input', function () {
+        const val = Math.max(50, parseInt($(this).val()) || 500);
+        saveSettings({ compressTokenBudget: val });
+    });
+
+    $('#ar-compress-card').on('click', async function () {
+        if (isUpdating) {
+            toastr.info('An update is already in progress…', 'Authentic Roleplay');
+            return;
+        }
+        isUpdating = true;
+        try {
+            await runCompressCard();
+        } finally {
+            isUpdating = false;
+        }
+    });
 }
 
 // ─── Entry point ──────────────────────────────────────────────────────────────
