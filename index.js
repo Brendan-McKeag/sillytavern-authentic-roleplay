@@ -484,27 +484,22 @@ function parseFieldEvolution(value) {
     return { original: original.trim(), entries };
 }
 
-function buildCompressPrompt(fieldName, original, entries, tokenBudget) {
-    const entryList = entries.map((e, i) => `${i + 1}. ${e}`).join('\n');
-
+function buildCompressPromptFromRaw(fieldName, rawValue, tokenBudget) {
     return `You are rewriting a character card field into a single cohesive narrative.
 
 FIELD: ${fieldName}
 
-ORIGINAL CONTENT:
-${original || '(empty)'}
-
-EVOLUTION LOG ENTRIES (chronological):
-${entryList}
+CURRENT CONTENT:
+${rawValue}
 
 YOUR TASK:
-Rewrite the original content and ALL evolution log entries into one cohesive, well-written ${fieldName} field — a unified "story thus far." This is not a summary of changes; it should read as if the character card was written from scratch by someone who knows the character's full history.
+Rewrite this ${fieldName} field into one cohesive, well-written narrative — a unified "story thus far." If the content contains evolution log entries, changelog-style notes, or appended updates, weave them naturally into the text so it reads as if the character card was written from scratch by someone who knows the character's full history.
 
 RULES:
-1. Preserve ALL factual information from both the original and every evolution entry.
-2. Do not add information that wasn't in the original or the entries.
-3. Write in the same style/voice as the original content.
-4. Organize naturally — weave the evolution entries into the narrative rather than appending them.
+1. Preserve ALL factual information — do not drop any details, events, or character traits.
+2. Do not add information that isn't already present in the content above.
+3. Write in the same style and voice as the original material.
+4. Organize naturally — integrate any appended notes or log entries into the narrative flow.
 5. Target approximately ${tokenBudget} tokens in length. Be concise but do not drop facts.
 6. Reply with ONLY the rewritten field text — no labels, no JSON, no explanation.`;
 }
@@ -522,28 +517,27 @@ async function runCompressCard() {
     if (!character) return;
 
     const fields = ['description', 'personality', 'scenario'];
-    const fieldsWithEvolution = fields.filter(f => {
+    const fieldsWithContent = fields.filter(f => {
         const val = character.data?.[f] ?? character[f] ?? '';
-        return val.includes(EVOLUTION_SECTION_HEADER);
+        return val.trim().length > 0;
     });
 
-    if (fieldsWithEvolution.length === 0) {
-        toastr.info('No fields have evolution log entries to compress.', 'Authentic Roleplay');
+    if (fieldsWithContent.length === 0) {
+        toastr.info('Character card fields are empty — nothing to compress.', 'Authentic Roleplay');
         return;
     }
 
     toastr.info(
-        `Compressing ${fieldsWithEvolution.length} field(s) for ${character.name}…`,
+        `Compressing ${fieldsWithContent.length} field(s) for ${character.name}…`,
         'Authentic Roleplay',
         { timeOut: 3000 },
     );
 
     const results = {};
 
-    for (const field of fieldsWithEvolution) {
+    for (const field of fieldsWithContent) {
         const rawValue = character.data?.[field] ?? character[field] ?? '';
-        const { original, entries } = parseFieldEvolution(rawValue);
-        const prompt = buildCompressPrompt(field, original, entries, settings.compressTokenBudget);
+        const prompt = buildCompressPromptFromRaw(field, rawValue, settings.compressTokenBudget);
 
         try {
             const rewritten = await context.generateQuietPrompt(prompt, false, false);
